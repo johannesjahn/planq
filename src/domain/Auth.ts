@@ -63,7 +63,10 @@ export const verifyToken = (token: string): Effect.Effect<Session, Error, JwtCon
   Effect.gen(function* () {
     const { secret } = yield* JwtConfig
     const { payload } = yield* Effect.tryPromise({
-      try: () => jose.jwtVerify(token, secret),
+      // Pin to HS256 explicitly rather than relying on jose's default
+      // key-type inference, so a future change to `secret`'s type can't
+      // silently widen which algorithms a token is accepted under.
+      try: () => jose.jwtVerify(token, secret, { algorithms: ["HS256"] }),
       catch: () => new Error("invalid token")
     })
     const username = typeof payload["username"] === "string" ? payload["username"] : ""

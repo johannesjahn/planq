@@ -1,6 +1,6 @@
 CREATE TABLE `users` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`username` text NOT NULL,
+	`username` text NOT NULL COLLATE NOCASE,
 	`password_hash` text NOT NULL,
 	`created_at` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
 );
