@@ -1,20 +1,21 @@
-import { SqliteClient } from "@effect/sql-sqlite-bun"
-import { Config, Effect, Layer } from "effect"
+import { Database as BunSqliteDatabase } from "bun:sqlite"
+import { Config, Context, Effect, Layer } from "effect"
+import { drizzle, type BunSQLiteDatabase } from "drizzle-orm/bun-sqlite"
+import { migrate } from "drizzle-orm/bun-sqlite/migrator"
+import * as schema from "./schema.ts"
 
-export const SqlLive = SqliteClient.layerConfig({
-  filename: Config.string("DB_FILENAME").pipe(Config.withDefault("planq.sqlite"))
-})
+export class Db extends Context.Tag("Db")<Db, BunSQLiteDatabase<typeof schema>>() {}
 
-const setupSchema = Effect.gen(function* () {
-  const sql = yield* SqliteClient.SqliteClient
-  yield* sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+export const DatabaseLive = Layer.scoped(
+  Db,
+  Effect.gen(function* () {
+    const filename = yield* Config.string("DB_FILENAME").pipe(Config.withDefault("planq.sqlite"))
+    const sqlite = yield* Effect.acquireRelease(
+      Effect.sync(() => new BunSqliteDatabase(filename)),
+      (db) => Effect.sync(() => db.close())
     )
-  `
-})
-
-export const DatabaseLive = Layer.provideMerge(Layer.effectDiscard(setupSchema), SqlLive)
+    const db = drizzle(sqlite, { schema })
+    yield* Effect.sync(() => migrate(db, { migrationsFolder: new URL("../../drizzle", import.meta.url).pathname }))
+    return db
+  })
+)
