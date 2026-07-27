@@ -2,6 +2,8 @@
 
 A TypeScript + [Bun](https://bun.com) + [Effect](https://effect.website) API with user registration/login, backed by SQLite via [Drizzle](https://orm.drizzle.team), with Swagger/OpenAPI docs generated from the `@effect/platform` `HttpApi` definition.
 
+`web/` holds the browser client — a React + TanStack Router SPA whose API types are generated from this API's own OpenAPI document. See [`web/README.md`](web/README.md).
+
 ## Setup
 
 ```bash
@@ -20,6 +22,14 @@ bun run start   # one-off
 
 The server listens on `PORT` (default `3000`). Swagger UI is served at `/docs`.
 
+`CORS_ORIGINS` is an optional comma-separated allowlist of browser origins (e.g. `http://localhost:5173,https://app.example.com`). When it is unset, all origins are allowed — fine locally, worth pinning in production.
+
+To run the frontend alongside it:
+
+```bash
+cd web && bun install && bun run dev   # http://localhost:5173, proxies /api to :3000
+```
+
 ## Endpoints
 
 - `GET /health` — `{ status: "ok" }`
@@ -33,6 +43,7 @@ The server listens on `PORT` (default `3000`). Swagger UI is served at `/docs`.
 - `bun run typecheck` — `tsc --noEmit`
 - `bun run lint` / `bun run lint:fix` — ESLint
 - `bun run format` / `bun run format:check` — Prettier
+- `bun run openapi:generate` — write the OpenAPI document for the `HttpApi` definition to `web/api.json` (run after any change under `src/api` or `src/domain`, then `cd web && bun run api:types`)
 - `bun run db:generate` — generate a new SQL migration from `src/db/schema.ts` into `drizzle/`
 - `bun run db:studio` — browse the database with Drizzle Studio
 
@@ -46,3 +57,5 @@ The server listens on `PORT` (default `3000`). Swagger UI is served at `/docs`.
 - `src/Server.ts` — composes the API layer with the database and starts the Bun HTTP server
 - `test/domain` — unit tests for schema validation and auth helpers
 - `test/api.test.ts` — integration tests that exercise the full HTTP API in-process (`HttpApiBuilder.toWebHandler`) against an in-memory SQLite database, no network port involved
+- `scripts/generate-openapi.ts` — writes `web/api.json` from the `HttpApi` definition
+- `web/` — the React frontend (its own package; see [`web/README.md`](web/README.md))

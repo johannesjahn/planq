@@ -1,3 +1,7 @@
 node_modules
 bun.lock
 *.sqlite
+
+# the web/ subproject runs its own Prettier and ESLint, and owns generated files
+# (api.json, src/lib/api.gen.ts) that are formatted by their generators
+web

@@ -1,0 +1,247 @@
+@import "tailwindcss";
+
+/*
+ * planq design tokens.
+ *
+ * The UI commits to a single dark, glassmorphic look — the frosted surfaces only
+ * read as glass over a dark, saturated backdrop, so there is deliberately no
+ * light theme. Tokens follow the shadcn/ui naming contract so components added
+ * later with `shadcn add` drop in without edits; `.dark` is kept as an alias of
+ * `:root` for the same reason.
+ */
+:root {
+  color-scheme: dark;
+
+  --radius: 0.9rem;
+
+  /* Raw palette — the aurora and the glass tints are mixed from these. */
+  --iris: oklch(0.65 0.21 291);
+  --cyan: oklch(0.78 0.15 202);
+  --rose: oklch(0.71 0.2 5);
+
+  --background: oklch(0.14 0.03 285);
+  --foreground: oklch(0.97 0.01 285);
+
+  /* Glass surfaces: translucent so the aurora behind them shows through. */
+  --card: oklch(1 0 0 / 7%);
+  --card-foreground: oklch(0.97 0.01 285);
+  --popover: oklch(0.18 0.03 285 / 92%);
+  --popover-foreground: oklch(0.97 0.01 285);
+
+  --primary: var(--iris);
+  --primary-foreground: oklch(0.99 0.01 285);
+  --secondary: oklch(1 0 0 / 10%);
+  --secondary-foreground: oklch(0.97 0.01 285);
+  --muted: oklch(1 0 0 / 6%);
+  --muted-foreground: oklch(0.72 0.03 285);
+  --accent: oklch(1 0 0 / 12%);
+  --accent-foreground: oklch(0.99 0.01 285);
+  --destructive: oklch(0.65 0.21 22);
+  --destructive-foreground: oklch(0.99 0.01 285);
+
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.72 0.16 291);
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-iris: var(--iris);
+  --color-cyan: var(--cyan);
+  --color-rose: var(--rose);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 12px);
+
+  --font-sans:
+    "Inter var", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, monospace;
+
+  --animate-drift-slow: drift 26s ease-in-out infinite;
+  --animate-drift-slower: drift 34s ease-in-out infinite reverse;
+  --animate-spin-slow: spin 18s linear infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+  --animate-pulse-ring: pulse-ring 2.8s ease-out infinite;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* Selection and focus rings pick up the brand iris rather than the UA default. */
+  ::selection {
+    background: color-mix(in oklab, var(--iris) 40%, transparent);
+    color: var(--foreground);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, white 14%, transparent);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, white 24%, transparent);
+    background-clip: padding-box;
+  }
+}
+
+/*
+ * Frosted panel. Kept as a utility rather than repeated inline because the recipe
+ * is fiddly: the blur needs a saturation boost to keep the aurora colourful behind
+ * it, and the top highlight (::before) is what sells the "pane of glass" edge.
+ */
+@utility glass {
+  position: relative;
+  background: linear-gradient(
+    150deg,
+    color-mix(in oklab, white 12%, transparent),
+    color-mix(in oklab, white 4%, transparent) 42%,
+    color-mix(in oklab, white 7%, transparent)
+  );
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid color-mix(in oklab, white 14%, transparent);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, white 22%, transparent) inset,
+    0 -1px 0 0 color-mix(in oklab, black 20%, transparent) inset,
+    0 24px 70px -24px color-mix(in oklab, black 80%, transparent);
+}
+
+/* Lighter-weight variant for nested surfaces that sit on top of a `glass` panel. */
+@utility glass-subtle {
+  background: color-mix(in oklab, white 6%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid color-mix(in oklab, white 10%, transparent);
+}
+
+@layer components {
+  /* Gradient hairline that traces the top edge of a glass panel. */
+  .glass-edge::after {
+    content: "";
+    position: absolute;
+    inset-inline: 12%;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, color-mix(in oklab, white 70%, transparent), transparent);
+    pointer-events: none;
+  }
+
+  /* Film grain over the aurora — without it the large gradients band visibly. */
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .text-gradient {
+    background: linear-gradient(
+      92deg,
+      color-mix(in oklab, white 92%, transparent),
+      color-mix(in oklab, var(--cyan) 80%, white)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(6%, -8%, 0) scale(1.12);
+  }
+  66% {
+    transform: translate3d(-5%, 6%, 0) scale(0.94);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Respect users who ask the OS to keep motion to a minimum. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -3,7 +3,8 @@ import prettier from "eslint-config-prettier"
 import tseslint from "typescript-eslint"
 
 export default tseslint.config(
-  { ignores: ["node_modules", "*.sqlite"] },
+  // `web` is a separate package with its own ESLint config and tsconfig.
+  { ignores: ["node_modules", "*.sqlite", "web"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
