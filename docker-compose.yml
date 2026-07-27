@@ -1,0 +1,16 @@
+services:
+  api:
+    build: .
+    env_file:
+      - .env
+    environment:
+      # Persisted to the named volume below rather than the .env default
+      # (planq.sqlite relative to WORKDIR) so data survives container recreation.
+      DB_FILENAME: /app/data/planq.sqlite
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    volumes:
+      - planq-data:/app/data
+
+volumes:
+  planq-data:
