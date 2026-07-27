@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm"
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { sqliteTable, text } from "drizzle-orm/sqlite-core"
 
 // The `username` column is COLLATE NOCASE at the SQL level (see the
 // generated migration) so "johndoe" and "JohnDoe" are the same account
@@ -7,7 +7,9 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core"
 // drizzle-orm's sqlite-core column builder has no `.collate()` API, so this
 // can't be expressed here — the migration file is the source of truth.
 export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   createdAt: text("created_at")

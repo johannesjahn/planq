@@ -19,11 +19,11 @@ const request = (path: string, init?: RequestInit) => handler(new Request(`http:
 
 interface AuthResponseBody {
   readonly token: string
-  readonly user: { readonly id: number; readonly username: string; readonly createdAt: string }
+  readonly user: { readonly id: string; readonly username: string; readonly createdAt: string }
 }
 
 interface UserBody {
-  readonly id: number
+  readonly id: string
   readonly username: string
   readonly createdAt: string
 }

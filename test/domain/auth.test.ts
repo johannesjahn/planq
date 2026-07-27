@@ -18,19 +18,20 @@ describe("password hashing", () => {
 
 describe("jwt tokens", () => {
   test("round-trips id and username through sign and verify", async () => {
+    const id = crypto.randomUUID()
     const program = Effect.gen(function* () {
-      const token = yield* signToken({ id: 42, username: "johndoe" })
+      const token = yield* signToken({ id, username: "johndoe" })
       return yield* verifyToken(token)
     }).pipe(Effect.provide(JwtConfigLive))
 
     const session = await Effect.runPromise(program)
-    expect(Number(session.id)).toBe(42)
+    expect(String(session.id)).toBe(id)
     expect(session.username).toBe("johndoe")
   })
 
   test("fails to verify a tampered token", async () => {
     const program = Effect.gen(function* () {
-      const token = yield* signToken({ id: 1, username: "johndoe" })
+      const token = yield* signToken({ id: crypto.randomUUID(), username: "johndoe" })
       return yield* verifyToken(`${token}tampered`)
     }).pipe(Effect.provide(JwtConfigLive))
 

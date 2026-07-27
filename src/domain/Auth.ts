@@ -1,4 +1,4 @@
-import { Config, Context, Effect, Layer, Redacted } from "effect"
+import { Config, Context, Effect, Layer, Redacted, Schema } from "effect"
 import * as jose from "jose"
 import { UserId } from "./User.ts"
 
@@ -45,13 +45,13 @@ const dummyHash = Bun.password.hash("dummy-password-for-timing-safety", hashOpti
 export const verifyPasswordConstantTime = (password: string, hash: string | undefined) =>
   Effect.promise(async () => Bun.password.verify(password, hash ?? (await dummyHash)))
 
-export const signToken = (payload: { id: number; username: string }) =>
+export const signToken = (payload: { id: string; username: string }) =>
   Effect.gen(function* () {
     const { secret } = yield* JwtConfig
     const token = yield* Effect.promise(() =>
       new jose.SignJWT({ username: payload.username })
         .setProtectedHeader({ alg: "HS256" })
-        .setSubject(String(payload.id))
+        .setSubject(payload.id)
         .setIssuedAt()
         .setExpirationTime("2h")
         .sign(secret)
@@ -69,6 +69,11 @@ export const verifyToken = (token: string): Effect.Effect<Session, Error, JwtCon
       try: () => jose.jwtVerify(token, secret, { algorithms: ["HS256"] }),
       catch: () => new Error("invalid token")
     })
+    // `sub` must be a well-formed UUID, not just any string, so a token
+    // signed with a stale/foreign format can't be coerced into a UserId.
+    if (!Schema.is(UserId)(payload.sub)) {
+      return yield* Effect.fail(new Error("invalid token"))
+    }
     const username = typeof payload["username"] === "string" ? payload["username"] : ""
-    return { id: UserId.make(Number(payload.sub)), username }
+    return { id: UserId.make(payload.sub), username }
   })
