@@ -54,6 +54,11 @@ describe("POST /auth/register", () => {
     const response = await registerUser("j", "short")
     expect(response.status).toBe(400)
   })
+
+  test("rejects a duplicate username differing only by case", async () => {
+    const response = await registerUser("JohnDoe", "supersecret")
+    expect(response.status).toBe(409)
+  })
 })
 
 describe("POST /auth/login", () => {
@@ -84,6 +89,17 @@ describe("POST /auth/login", () => {
       body: JSON.stringify({ username: "johndoe", password: "wrongpassword" })
     })
     expect(response.status).toBe(401)
+  })
+
+  test("logs in with a username differing only by case", async () => {
+    const response = await request("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "JohnDoe", password: "supersecret" })
+    })
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as AuthResponseBody
+    expect(body.user.username).toBe("johndoe")
   })
 })
 
