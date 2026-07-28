@@ -43,6 +43,7 @@ type ApiErrorBody =
   | components["schemas"]["UsernameAlreadyInUse"]
   | components["schemas"]["InvalidCredentials"]
   | components["schemas"]["Unauthorized"]
+  | components["schemas"]["TooManyRequests"]
   | components["schemas"]["HttpApiDecodeError"]
 
 export class ApiError extends Error {
@@ -60,6 +61,18 @@ export class ApiError extends Error {
   get isUnauthorized() {
     return this.status === 401
   }
+
+  /** True when the API is throttling this client — retrying immediately will not help. */
+  get isRateLimited() {
+    return this.status === 429
+  }
+}
+
+/** Renders the wait a 429 asks for as something a person would say out loud. */
+function formatWait(seconds: number): string {
+  if (seconds < 90) return `${Math.max(1, Math.round(seconds))} seconds`
+  const minutes = Math.round(seconds / 60)
+  return minutes < 60 ? `${minutes} minutes` : "an hour"
 }
 
 function hasTag(body: unknown): body is ApiErrorBody {
@@ -81,6 +94,8 @@ function messageFor(body: unknown, status: number): string {
       return "That username and password combination doesn’t match an account."
     case "Unauthorized":
       return "Your session has expired. Please sign in again."
+    case "TooManyRequests":
+      return `Too many attempts. For account safety this device is paused — try again in ${formatWait(body.retryAfterSeconds)}.`
     case "HttpApiDecodeError":
       // The backend validates the same rules the form does, so this only shows up
       // when the two drift apart — surface the server's own wording in that case.

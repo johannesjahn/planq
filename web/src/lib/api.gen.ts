@@ -126,6 +126,11 @@ export interface components {
             /** @enum {string} */
             _tag: "UsernameAlreadyInUse";
         };
+        TooManyRequests: {
+            retryAfterSeconds: number;
+            /** @enum {string} */
+            _tag: "TooManyRequests";
+        };
         LoginPayload: {
             /**
              * maxLength(32)
@@ -227,6 +232,15 @@ export interface operations {
                     "application/json": components["schemas"]["UsernameAlreadyInUse"];
                 };
             };
+            /** @description TooManyRequests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TooManyRequests"];
+                };
+            };
         };
     };
     "auth.login": {
@@ -267,6 +281,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvalidCredentials"];
+                };
+            };
+            /** @description TooManyRequests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TooManyRequests"];
                 };
             };
         };

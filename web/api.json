@@ -87,6 +87,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "TooManyRequests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TooManyRequests"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -136,6 +146,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidCredentials"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "TooManyRequests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TooManyRequests"
                 }
               }
             }
@@ -379,6 +399,25 @@
             "type": "string",
             "enum": [
               "UsernameAlreadyInUse"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "TooManyRequests": {
+        "type": "object",
+        "required": [
+          "retryAfterSeconds",
+          "_tag"
+        ],
+        "properties": {
+          "retryAfterSeconds": {
+            "type": "number"
+          },
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "TooManyRequests"
             ]
           }
         },
