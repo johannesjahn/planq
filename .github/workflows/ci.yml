@@ -24,3 +24,37 @@ jobs:
       - run: bun run typecheck
 
       - run: bun run test
+
+      # `web/api.json` is generated from the HttpApi definition and committed, so a
+      # backend change that forgets to regenerate it must fail here rather than
+      # silently leaving the frontend types describing the old contract.
+      - name: Check web/api.json is up to date
+        run: |
+          bun run openapi:generate
+          git diff --exit-code web/api.json
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run format:check
+
+      - run: bun run lint
+
+      - run: bun run build
+
+      # The generated client must match the committed spec for the same reason.
+      - name: Check generated API types are up to date
+        run: |
+          bun run api:types
+          git diff --exit-code src/lib/api.gen.ts

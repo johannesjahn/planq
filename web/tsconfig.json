@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    // `node` is needed for the config files, not the app: `vite.config.ts` uses
+    // `process.env` and `node:url`, and `eslint.config.mjs` uses
+    // `import.meta.dirname`. Without it those resolve to `error` types and the
+    // type-checked lint rules fail — which only shows up in CI, where the root
+    // package's node_modules isn't present to accidentally supply them.
+    "types": ["vite/client", "node"],
+    // `eslint.config.mjs` is part of the project so typescript-eslint's project
+    // service can resolve it when linting itself.
+    "allowJs": true,
+    "checkJs": false,
+
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+
+    "strict": true,
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "eslint.config.mjs"]
+}

@@ -6,7 +6,22 @@ import { DatabaseLive } from "./db/Database.ts"
 
 const port = Number(process.env["PORT"] ?? 3000)
 
-const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
+// The `web/` frontend runs on its own origin (Vite dev server on :5173 by default),
+// so browsers need explicit CORS headers to talk to this API. `CORS_ORIGINS` is a
+// comma-separated allowlist; when unset every origin is allowed, which is fine for
+// local development but should be pinned in production.
+const corsOrigins = (process.env["CORS_ORIGINS"] ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0)
+
+const cors = HttpMiddleware.cors({
+  ...(corsOrigins.length > 0 ? { allowedOrigins: corsOrigins } : {}),
+  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedMethods: ["GET", "POST", "OPTIONS"]
+})
+
+const HttpLive = HttpApiBuilder.serve((app) => HttpMiddleware.logger(cors(app))).pipe(
   Layer.provide(HttpApiSwagger.layer({ path: "/docs" })),
   Layer.provide(ApiLive),
   Layer.provide(DatabaseLive),

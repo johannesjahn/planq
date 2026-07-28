@@ -26,5 +26,9 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+
+  // `web` is a separate package with its own tsconfig (DOM libs, path aliases,
+  // different module settings) — the root typecheck must not reach into it.
+  "exclude": ["node_modules", "web"]
 }

@@ -1,0 +1,4 @@
+dist
+node_modules
+api.json
+src/lib/api.gen.ts

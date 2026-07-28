@@ -3,6 +3,10 @@ node_modules
 .github
 drizzle.config.ts
 test
+# the frontend is a separate package with its own build; the API image is
+# backend-only, so keep both it and the codegen scripts out of the build context
+web
+scripts
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal

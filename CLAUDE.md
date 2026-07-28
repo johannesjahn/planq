@@ -1,6 +1,6 @@
 # planq
 
-TypeScript + Bun + Effect API. User register/login backed by SQLite via Drizzle, Swagger/OpenAPI docs auto-generated from the `HttpApi` definition. ESLint + Prettier configured.
+TypeScript + Bun + Effect API. User register/login backed by SQLite via Drizzle, Swagger/OpenAPI docs auto-generated from the `HttpApi` definition. ESLint + Prettier configured. `web/` is a **separate package** holding the React frontend — see the section at the bottom.
 
 ## Run / check
 
@@ -11,6 +11,7 @@ bun run test          # bun test
 bun run typecheck    # tsc --noEmit
 bun run lint         # eslint .
 bun run format       # prettier --write .
+bun run openapi:generate   # regenerate web/api.json from the HttpApi definition
 ```
 
 Env vars (see `.env.example`): `PORT` (default 3000), `DB_FILENAME` (default `planq.sqlite`), `JWT_SECRET` (**required** outside `NODE_ENV=test` — the server fails to start without it, see gotcha below).
@@ -27,11 +28,12 @@ Env vars (see `.env.example`): `PORT` (default 3000), `DB_FILENAME` (default `pl
 - `src/api/AuthLive.ts` — register relies on the `users.username` `UNIQUE` constraint (catches the constraint-violation error and maps it to `UsernameAlreadyInUse`) rather than a check-then-insert `SELECT`, which would race under concurrent registrations for the same username (verified: pre-fix, concurrent duplicate registrations could 500 instead of 409). See gotcha below on how the error is detected post-Drizzle-migration.
 - `src/api/UsersLive.ts` / `src/api/HealthLive.ts` — remaining `HttpApiBuilder.group(Api, "<name>", handlers => handlers.handle(...))` implementations. DB access via Drizzle's query builder (`db.select()/.insert()` against `src/db/schema.ts`'s `users` table) against the `Db` tag, no raw SQL.
 - `src/api/ApiLive.ts` — `HttpApiBuilder.api(Api)` with `AuthLive`/`UsersLive`/`HealthLive`/`AuthorizationLive`/`JwtConfigLive` provided. Extracted out of `Server.ts` so `test/api.test.ts` can reuse the exact same handler wiring (only swapping in an in-memory DB) instead of duplicating the composition.
-- `src/Server.ts` — provides `ApiLive` and `DatabaseLive` into `HttpApiBuilder.serve(...)` + `HttpApiSwagger.layer({ path: "/docs" })` + `BunHttpServer.layer({ port })`, then `BunRuntime.runMain(Layer.launch(HttpLive))`.
+- `src/Server.ts` — provides `ApiLive` and `DatabaseLive` into `HttpApiBuilder.serve(...)` + `HttpApiSwagger.layer({ path: "/docs" })` + `BunHttpServer.layer({ port })`, then `BunRuntime.runMain(Layer.launch(HttpLive))`. The serve middleware is `app => HttpMiddleware.logger(cors(app))`; `HttpMiddleware.cors` reads a comma-separated `CORS_ORIGINS` allowlist and falls back to allowing every origin when it's unset (the frontend runs on a different port in dev).
+- `scripts/generate-openapi.ts` — `OpenApi.fromApi(Api)` serialised to `web/api.json` (committed). CI regenerates it and `git diff --exit-code`s, so a backend contract change that skips `bun run openapi:generate` fails the build.
 - `drizzle.config.ts` — `drizzle-kit` config (dialect `sqlite`, schema path, `out: "./drizzle"`); reads `DB_FILENAME` for its `dbCredentials.url` (only used by the CLI, not at runtime).
 - `test/domain/*.test.ts` — unit tests: `Schema.decodeUnknownSync` for payload validation, `Effect.runPromise`/`Effect.runPromiseExit` for the password/JWT helpers.
 - `test/api.test.ts` — integration test built on `HttpApiBuilder.toWebHandler`, see gotcha below.
-- `.github/workflows/ci.yml` — runs `format:check`, `lint`, `typecheck`, `test` via `oven-sh/setup-bun` on push/PR to `main`.
+- `.github/workflows/ci.yml` — two jobs. `check` runs `format:check`, `lint`, `typecheck`, `test` plus the `web/api.json` freshness check at the repo root; `web` runs `format:check`, `lint`, `build` and the `api.gen.ts` freshness check inside `web/`. Both via `oven-sh/setup-bun` on push/PR to `main`.
 
 ## Gotchas hit while building this (don't re-derive)
 
@@ -47,3 +49,47 @@ Env vars (see `.env.example`): `PORT` (default 3000), `DB_FILENAME` (default `pl
 - **Password hashing cost is also turned down under `NODE_ENV=test`** (`memoryCost: 19, timeCost: 1` vs Bun's real argon2id defaults) — cut the test suite from ~900ms to ~250ms. Don't "fix" this by using the same cost in both — that's the point.
 - **The migrations folder path in `Database.ts` is resolved via `new URL("../../drizzle", import.meta.url).pathname`**, not a relative string like `"./drizzle"` — `drizzle-orm/bun-sqlite/migrator`'s `migrate()` resolves relative paths against `process.cwd()`, which breaks as soon as the process is started from anywhere other than the repo root (e.g. `bun test` from a subdirectory, or a packaged binary). `import.meta.url`-relative resolution is cwd-independent.
 - **ESLint uses `tseslint.configs.recommendedTypeChecked`** (via `projectService: true` in `eslint.config.mjs`), not the plain `recommended` set — it needs a real tsconfig to type-check against, which is why it caught `bun-types`' `expect(...).rejects.toBeDefined()` being typed as returning `void` instead of a `Promise` (a real mistyping in `bun-types`, not a bug in the test). Worked around in `test/domain/auth.test.ts` by asserting on `Effect.runPromiseExit(...)` instead of `.rejects`, which is also more idiomatic for testing Effect programs.
+
+## `web/` — the React frontend
+
+A **separate package**, not a workspace member: its own `package.json`, `bun.lock`, `tsconfig.json`, `eslint.config.mjs` and `.prettierrc.json`. Run its commands from `web/`. The root's ESLint config ignores `web`, and the root `.prettierignore` does too, so the two toolchains never fight over the same files.
+
+Stack: Vite 8 + React 19, TanStack Router (code-based routes) + TanStack Query, Tailwind CSS v4 (`@tailwindcss/vite`, no `tailwind.config.js`), shadcn/ui primitives, react-hook-form + Zod, `motion` (Framer Motion v12) for animation, `openapi-fetch` + `openapi-typescript` for the API client.
+
+**Product framing**: planq is pitched as shift planning for hospitals, clinics and care teams, so UI copy addresses clinicians and rota administrators, not developers. Only auth + the account view are actually built — the dashboard's "Your next shifts" panel is an explicit empty state saying scheduling is still in development. Don't replace it with mock shifts, and don't write copy that implies unbuilt scheduling features work. Security claims in the marketing column must stay factually true of the code (argon2id hashing, two-hour session expiry) — no invented compliance certifications.
+
+```bash
+cd web
+bun run dev        # :5173, proxies /api/* -> http://localhost:3000
+bun run build      # tsc --noEmit && vite build
+bun run lint / format / typecheck
+bun run api:types  # api.json -> src/lib/api.gen.ts
+```
+
+### The generated-contract chain
+
+`src/api/Api.ts` → `bun run openapi:generate` (root) → `web/api.json` → `bun run api:types` (web) → `web/src/lib/api.gen.ts` → `web/src/lib/api.ts`. Both generated files are committed and CI diff-checks them. Nothing in the frontend hand-writes a request or response shape.
+
+### File map
+
+- `src/lib/api.ts` — the `openapi-fetch` client. Module-level token slot + `onRequest` middleware attaches `Authorization`; `ApiError` normalises the API's tagged errors (`UsernameAlreadyInUse`, `InvalidCredentials`, `Unauthorized`, `HttpApiDecodeError`) into user-facing messages; `request()` also wraps fetch rejections so callers only ever see `ApiError`.
+- `src/features/auth/` — `AuthProvider` (session state), `auth-context.ts` (the `useAuth` hook, split out so the provider file only exports a component), `session-storage.ts`, `schemas.ts` (Zod mirrors of the backend's username/password rules), `AuthLayout`/`AuthTabs`, `LoginForm`, `RegisterForm`, `PasswordStrength`.
+- `src/features/dashboard/` — `DashboardPage` renders the `/users/me` payload field by field, plus a JWT-`exp` countdown and a raw-JSON disclosure.
+- `src/components/ui/` — shadcn/ui primitives (`components.json` present, so `bunx shadcn@latest add …` works).
+- `src/components/` — app-specific: `AuroraBackground`, `GlassPanel` (cursor-tracking highlight), `BrandMark`, `PasswordInput`, `FormAlert`, `SubmitButton`, `CopyButton`, `ApiStatusPill`, `NotFoundPage`.
+- `src/router.tsx` — route tree. `/login` and `/register` sit under a pathless `_auth` layout route so the card and the sliding tab pill stay mounted between them; `/` is guarded and `_auth` redirects away when already signed in.
+- `src/index.css` — design tokens (shadcn variable names, dark-only), the `glass` / `glass-subtle` `@utility` recipes, keyframes, and the `prefers-reduced-motion` blanket override. The palette is clinical by intent: three raw tokens `--azure` (primary), `--teal` (accent) and `--mint` feed the aurora, buttons and avatar; nothing else on screen is warm, so amber/red stay meaningful.
+
+### Gotchas hit while building the frontend
+
+- **Auth state must be primed before the first render.** `AuthProvider.tsx` calls `setAuthToken(readSession()?.token)` at _module scope_, not in an effect — otherwise the `/users/me` query fired during mount races the effect and goes out without a bearer header.
+- **`RouterProvider context={{ auth }}` is not enough on its own.** Route guards read auth from the router context, which is only sampled when a match is evaluated, so `App.tsx` calls `router.invalidate()` in an effect keyed on `auth.isAuthenticated`. Without it, signing out while on `/` leaves you sitting on the guarded page.
+- **`eslint-plugin-react-hooks` v7 ships `configs.recommended` in eslintrc shape** (`plugins` as an array of strings), which flat config rejects with a confusing error. The flat variants live under `configs.flat` — the config uses `reactHooks.configs.flat["recommended-latest"]`.
+- **The React Compiler lint rules are strict about two things here**: `react-hooks/set-state-in-effect` flags the 401 → `signOut()` effect in `AuthProvider` (disabled inline with a comment — reacting to a server rejection _is_ external synchronisation), and `react-hooks/incompatible-library` flags `form.watch()` from react-hook-form (fixed properly by using `useWatch({ control, name })`).
+- **`form.handleSubmit(...)` returns a promise**, which trips `@typescript-eslint/no-misused-promises` when passed straight to `onSubmit`. Both forms wrap it: `onSubmit={(event) => void form.handleSubmit(...)(event)}`.
+- **`throw redirect(...)`** — TanStack Router's guard idiom throws a non-Error object, so `@typescript-eslint/only-throw-error` is turned off for `src/router.tsx` specifically (not globally).
+- **`motion.div`'s prop types widen `children`** to include `MotionValue`, which isn't assignable to `ReactNode`. `GlassPanel` narrows it back with `Omit<ComponentProps<typeof motion.div>, "children"> & { children?: ReactNode }`.
+- **Aurora blob sizes use `size-[max(70vw,560px)]`**, not plain `vw` — at a 390px phone width, viewport-relative blobs collapse into three small dots and the background goes flat black.
+- **`tsconfig.json` sets `allowJs: true`** purely so typescript-eslint's project service can resolve `eslint.config.mjs` when linting itself; without it ESLint errors with "was not found by the project service".
+- **`web/` needs its own `@types/node`, and `"node"` in `tsconfig.json`'s `types`.** Only the config files use Node APIs (`vite.config.ts` reads `process.env` and imports `node:url`; `eslint.config.mjs` uses `import.meta.dirname`), but without those types they resolve to `error` types and `recommendedTypeChecked`'s `no-unsafe-*` rules fail. This is invisible during local development — Node walks up and finds `@types/node` via the root package's `node_modules` (a transitive dep of `@types/bun`) — and only fails in CI, where the `web` job checks out and installs `web/` alone. **When debugging a CI-only failure in `web/`, reproduce it by moving the root `node_modules` aside**, not by trusting a green local run.
+- The dev server proxies `/api/*` rather than pointing the client at `http://localhost:3000` directly, so the browser stays single-origin in development. CORS on the backend still matters for deployments where the two are served from different hosts.
