@@ -2,7 +2,14 @@ import { HttpApiBuilder } from "@effect/platform"
 import { eq } from "drizzle-orm"
 import { Effect } from "effect"
 import { hashPassword, signToken, verifyPasswordConstantTime } from "../domain/Auth.ts"
-import { UsernameAlreadyInUse, InvalidCredentials, AuthResponse, User, UserId } from "../domain/User.ts"
+import {
+  UsernameAlreadyInUse,
+  InvalidCredentials,
+  AuthResponse,
+  User,
+  UserId,
+  normalizeUsername
+} from "../domain/User.ts"
 import { Db } from "../db/Database.ts"
 import { users } from "../db/schema.ts"
 import { Api } from "./Api.ts"
@@ -30,7 +37,14 @@ export const AuthLive = HttpApiBuilder.group(Api, "auth", (handlers) =>
         const row = yield* Effect.try(() =>
           db
             .insert(users)
-            .values({ username: payload.username, passwordHash })
+            // `username` keeps the casing that was typed; `usernameLower` is
+            // what the UNIQUE index covers, so a case variant of an existing
+            // username is a duplicate rather than a second account.
+            .values({
+              username: payload.username,
+              usernameLower: normalizeUsername(payload.username),
+              passwordHash
+            })
             .returning({ id: users.id, username: users.username, createdAt: users.createdAt })
             .get()
         ).pipe(
@@ -62,7 +76,11 @@ export const AuthLive = HttpApiBuilder.group(Api, "auth", (handlers) =>
         yield* rateLimiter.checkUsername(payload.username)
 
         const row = yield* Effect.try(() =>
-          db.select().from(users).where(eq(users.username, payload.username)).get()
+          db
+            .select()
+            .from(users)
+            .where(eq(users.usernameLower, normalizeUsername(payload.username)))
+            .get()
         ).pipe(Effect.catchAll(Effect.die))
 
         // Always run the (slow) password verification, even on a lookup

@@ -1,6 +1,7 @@
 import { HttpApp, HttpServerResponse } from "@effect/platform"
 import { Clock, Config, Context, Effect, Layer } from "effect"
 import { TooManyRequests } from "../domain/RateLimit.ts"
+import { normalizeUsername } from "../domain/User.ts"
 
 /**
  * In-process rate limiting for the auth endpoints.
@@ -148,10 +149,10 @@ const make = (config: RateLimitConfig): RateLimiterService => {
     }
   }
 
-  // Usernames are matched case-insensitively by the database (the column is
-  // COLLATE NOCASE), so the lockout key has to be too — otherwise "Alice" and
-  // "alice" would get a fresh allowance each.
-  const streakKey = (username: string) => username.trim().toLowerCase()
+  // The lockout key is the same normalised username the account lookup uses —
+  // otherwise "Alice" and "alice" would resolve to one account but get a fresh
+  // allowance each.
+  const streakKey = normalizeUsername
 
   return {
     consume: (route, ip) =>
