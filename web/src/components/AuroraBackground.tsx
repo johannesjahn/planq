@@ -12,9 +12,9 @@ export function AuroraBackground() {
       {/* Colour fields. Heavily blurred and oversized so their edges never enter frame.
           The `max(…)` floor keeps them large enough to fill a phone screen, where a
           plain viewport-width size would collapse into three small dots. */}
-      <div className="absolute -top-[30%] -left-[15%] size-[max(70vw,560px)] animate-drift-slow rounded-full bg-iris/35 blur-[120px]" />
-      <div className="absolute top-[10%] -right-[20%] size-[max(65vw,520px)] animate-drift-slower rounded-full bg-cyan/22 blur-[130px]" />
-      <div className="absolute -bottom-[30%] left-[20%] size-[max(60vw,480px)] animate-drift-slow rounded-full bg-rose/22 blur-[140px] [animation-delay:-8s]" />
+      <div className="absolute -top-[30%] -left-[15%] size-[max(70vw,560px)] animate-drift-slow rounded-full bg-azure/40 blur-[120px]" />
+      <div className="absolute top-[10%] -right-[20%] size-[max(65vw,520px)] animate-drift-slower rounded-full bg-teal/20 blur-[130px]" />
+      <div className="absolute -bottom-[30%] left-[20%] size-[max(60vw,480px)] animate-drift-slow rounded-full bg-mint/16 blur-[140px] [animation-delay:-8s]" />
 
       {/* Perspective grid — gives the blur something structured to distort. */}
       <div

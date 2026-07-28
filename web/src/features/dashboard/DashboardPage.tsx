@@ -1,5 +1,13 @@
 import { motion } from "motion/react"
-import { CalendarDaysIcon, FingerprintIcon, LogOutIcon, RefreshCwIcon, ShieldCheckIcon, TimerIcon } from "lucide-react"
+import {
+  BadgeCheckIcon,
+  CalendarDaysIcon,
+  CalendarSearchIcon,
+  LogOutIcon,
+  RefreshCwIcon,
+  ShieldCheckIcon,
+  TimerIcon
+} from "lucide-react"
 import { useState } from "react"
 import { BrandMark, BrandWordmark } from "@/components/BrandMark"
 import { CopyButton } from "@/components/CopyButton"
@@ -48,7 +56,7 @@ export function DashboardPage() {
             size="sm"
             onClick={auth.refresh}
             className="gap-2"
-            aria-label="Refresh profile from the API"
+            aria-label="Refresh your details from the server"
           >
             <RefreshCwIcon className={cn("size-3.5", auth.isVerifying && "animate-spin")} />
             <span className="hidden sm:inline">Refresh</span>
@@ -74,7 +82,7 @@ export function DashboardPage() {
                     animate={{ scale: 1, opacity: 1, rotate: 0 }}
                     transition={{ type: "spring", stiffness: 260, damping: 18, delay: 0.1 }}
                   >
-                    <Avatar className="size-16 shadow-[0_16px_40px_-16px_color-mix(in_oklab,var(--iris)_90%,transparent)]">
+                    <Avatar className="size-16 shadow-[0_16px_40px_-16px_color-mix(in_oklab,var(--azure)_90%,transparent)]">
                       <AvatarFallback className="text-xl">{initials(user.username)}</AvatarFallback>
                     </Avatar>
                   </motion.div>
@@ -97,10 +105,33 @@ export function DashboardPage() {
           </GlassPanel>
         </motion.div>
 
+        {/* Rostering isn't built yet — say so plainly rather than showing a
+            plausible-looking placeholder schedule that nobody should trust. */}
+        <motion.section variants={fadeUp}>
+          <h2 className="mb-3 px-1 text-[11px] font-medium tracking-[0.12em] text-muted-foreground/70 uppercase">
+            Your next shifts
+          </h2>
+
+          <GlassPanel spotlight={false} className="px-6 py-10">
+            {/* GlassPanel wraps its children in a positioning div, so the centring
+                has to live on an element inside it rather than on the panel. */}
+            <div className="flex flex-col items-center gap-3 text-center">
+              <span className="grid size-11 place-items-center rounded-xl glass-subtle text-foreground/70">
+                <CalendarSearchIcon className="size-5" />
+              </span>
+              <p className="text-[15px] font-medium">No published rota yet</p>
+              <p className="max-w-sm text-[13px] leading-relaxed text-muted-foreground">
+                Shift scheduling is still in development. Once your unit publishes a rota, your upcoming shifts and
+                on-call cover will show up here.
+              </p>
+            </div>
+          </GlassPanel>
+        </motion.section>
+
         {/* The actual `/users/me` payload, field by field. */}
         <motion.section variants={fadeUp}>
           <h2 className="mb-3 px-1 text-[11px] font-medium tracking-[0.12em] text-muted-foreground/70 uppercase">
-            Account details
+            Your account
           </h2>
 
           {user === null ? (
@@ -112,15 +143,15 @@ export function DashboardPage() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               <DetailTile
-                icon={FingerprintIcon}
-                label="User ID"
+                icon={BadgeCheckIcon}
+                label="Staff ID"
                 value={<span className="font-mono text-[13px] break-all">{user.id}</span>}
-                hint="UUID v4, assigned at registration"
-                action={<CopyButton value={user.id} label="Copy user ID" />}
+                hint="Quote this when contacting your rota administrator"
+                action={<CopyButton value={user.id} label="Copy staff ID" />}
               />
               <DetailTile
                 icon={CalendarDaysIcon}
-                label="Member since"
+                label="Account created"
                 value={formatDateTime(user.createdAt)}
                 hint={formatRelative(user.createdAt)}
               />
@@ -134,13 +165,13 @@ export function DashboardPage() {
                     <span className="tabular-nums">{formatCountdown(expiresAt.getTime() - now)}</span>
                   )
                 }
-                hint={expiresAt === null ? "Token could not be read" : formatDateTime(expiresAt)}
+                hint={expiresAt === null ? "Session could not be read" : formatDateTime(expiresAt)}
               />
               <DetailTile
                 icon={ShieldCheckIcon}
-                label="Authentication"
-                value="Bearer JWT"
-                hint="HS256, verified by the API on every request"
+                label="Sign-in security"
+                value="Signed session token"
+                hint="Re-checked by the server on every request"
               />
             </div>
           )}
@@ -173,13 +204,13 @@ export function DashboardPage() {
 
         {auth.error !== null ? (
           <motion.p variants={fadeUp} className="px-1 text-[13px] text-destructive/90">
-            Couldn’t refresh your profile: {auth.error.message}
+            Couldn’t refresh your details: {auth.error.message}
           </motion.p>
         ) : null}
       </motion.div>
 
       <footer className="mt-auto pt-12 text-center text-[11px] text-muted-foreground/60">
-        planq · data served live from the Effect API
+        planq · shift planning for clinical teams
       </footer>
     </main>
   )

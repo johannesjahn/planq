@@ -17,7 +17,7 @@ export function BrandMark({ className, size = 44 }: { className?: string; size?:
         className="absolute inset-0 animate-spin-slow rounded-xl opacity-70 blur-[6px]"
         style={{
           background:
-            "conic-gradient(from 0deg, transparent 0%, color-mix(in oklab, var(--iris) 90%, transparent) 25%, transparent 45%, color-mix(in oklab, var(--cyan) 90%, transparent) 70%, transparent 90%)"
+            "conic-gradient(from 0deg, transparent 0%, color-mix(in oklab, var(--azure) 95%, transparent) 25%, transparent 45%, color-mix(in oklab, var(--teal) 90%, transparent) 70%, transparent 90%)"
         }}
       />
       <svg

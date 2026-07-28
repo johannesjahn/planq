@@ -3,7 +3,12 @@
 /*
  * planq design tokens.
  *
- * The UI commits to a single dark, glassmorphic look — the frosted surfaces only
+ * The palette is deliberately clinical: cool blues and teals of the kind
+ * hospital software is expected to wear, with mint reserved for "all clear"
+ * states. Nothing here trends warm — amber and red stay meaningful because they
+ * are the only warm colours on screen.
+ *
+ * The UI commits to a single dark, glassmorphic look — frosted surfaces only
  * read as glass over a dark, saturated backdrop, so there is deliberately no
  * light theme. Tokens follow the shadcn/ui naming contract so components added
  * later with `shadcn add` drop in without edits; `.dark` is kept as an alias of
@@ -15,33 +20,33 @@
   --radius: 0.9rem;
 
   /* Raw palette — the aurora and the glass tints are mixed from these. */
-  --iris: oklch(0.65 0.21 291);
-  --cyan: oklch(0.78 0.15 202);
-  --rose: oklch(0.71 0.2 5);
+  --azure: oklch(0.58 0.16 250);
+  --teal: oklch(0.74 0.12 195);
+  --mint: oklch(0.8 0.13 168);
 
-  --background: oklch(0.14 0.03 285);
-  --foreground: oklch(0.97 0.01 285);
+  --background: oklch(0.15 0.025 245);
+  --foreground: oklch(0.97 0.01 245);
 
   /* Glass surfaces: translucent so the aurora behind them shows through. */
   --card: oklch(1 0 0 / 7%);
-  --card-foreground: oklch(0.97 0.01 285);
-  --popover: oklch(0.18 0.03 285 / 92%);
-  --popover-foreground: oklch(0.97 0.01 285);
+  --card-foreground: oklch(0.97 0.01 245);
+  --popover: oklch(0.19 0.03 245 / 92%);
+  --popover-foreground: oklch(0.97 0.01 245);
 
-  --primary: var(--iris);
-  --primary-foreground: oklch(0.99 0.01 285);
+  --primary: var(--azure);
+  --primary-foreground: oklch(0.99 0.005 245);
   --secondary: oklch(1 0 0 / 10%);
-  --secondary-foreground: oklch(0.97 0.01 285);
+  --secondary-foreground: oklch(0.97 0.01 245);
   --muted: oklch(1 0 0 / 6%);
-  --muted-foreground: oklch(0.72 0.03 285);
+  --muted-foreground: oklch(0.73 0.02 245);
   --accent: oklch(1 0 0 / 12%);
-  --accent-foreground: oklch(0.99 0.01 285);
+  --accent-foreground: oklch(0.99 0.005 245);
   --destructive: oklch(0.65 0.21 22);
-  --destructive-foreground: oklch(0.99 0.01 285);
+  --destructive-foreground: oklch(0.99 0.005 245);
 
   --border: oklch(1 0 0 / 14%);
   --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.72 0.16 291);
+  --ring: oklch(0.7 0.14 240);
 }
 
 .dark {
@@ -69,9 +74,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --color-iris: var(--iris);
-  --color-cyan: var(--cyan);
-  --color-rose: var(--rose);
+  --color-azure: var(--azure);
+  --color-teal: var(--teal);
+  --color-mint: var(--mint);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -110,9 +115,9 @@
     overflow-x: hidden;
   }
 
-  /* Selection and focus rings pick up the brand iris rather than the UA default. */
+  /* Selection and focus rings pick up the brand azure rather than the UA default. */
   ::selection {
-    background: color-mix(in oklab, var(--iris) 40%, transparent);
+    background: color-mix(in oklab, var(--azure) 50%, transparent);
     color: var(--foreground);
   }
 
@@ -191,7 +196,7 @@
     background: linear-gradient(
       92deg,
       color-mix(in oklab, white 92%, transparent),
-      color-mix(in oklab, var(--cyan) 80%, white)
+      color-mix(in oklab, var(--teal) 85%, white)
     );
     -webkit-background-clip: text;
     background-clip: text;

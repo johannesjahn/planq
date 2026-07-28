@@ -49,7 +49,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
     <div className="mt-7">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         <h2 className="text-[22px] font-semibold tracking-tight">Welcome back</h2>
-        <p className="mt-1.5 text-[13px] text-muted-foreground">Sign in to pick up where you left off.</p>
+        <p className="mt-1.5 text-[13px] text-muted-foreground">Sign in to get back to your schedule.</p>
       </motion.div>
 
       <div className="mt-6">
@@ -73,7 +73,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="ada_lovelace" autoComplete="username" autoFocus {...field} />
+                    <Input placeholder="j_okafor" autoComplete="username" autoFocus {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

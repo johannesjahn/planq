@@ -2,6 +2,8 @@
 
 A TypeScript + [Bun](https://bun.com) + [Effect](https://effect.website) API with user registration/login, backed by SQLite via [Drizzle](https://orm.drizzle.team), with Swagger/OpenAPI docs generated from the `@effect/platform` `HttpApi` definition.
 
+The product it backs is shift planning for hospitals, clinics and care teams. Registration, sign-in and the account view are what exist so far; rostering itself is not built yet.
+
 `web/` holds the browser client — a React + TanStack Router SPA whose API types are generated from this API's own OpenAPI document. See [`web/README.md`](web/README.md).
 
 ## Setup

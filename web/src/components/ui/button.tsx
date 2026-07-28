@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-linear-to-br from-iris to-[color-mix(in_oklab,var(--iris)_60%,var(--rose))] text-primary-foreground shadow-[0_10px_30px_-10px_color-mix(in_oklab,var(--iris)_75%,transparent)] hover:brightness-110 active:brightness-95",
+          "bg-linear-to-br from-azure to-[color-mix(in_oklab,var(--azure)_70%,var(--teal))] text-primary-foreground shadow-[0_10px_30px_-10px_color-mix(in_oklab,var(--azure)_75%,transparent)] hover:brightness-110 active:brightness-95",
         glass: "glass-subtle text-foreground hover:bg-white/12 hover:border-white/20 active:bg-white/8 rounded-lg",
         outline: "border border-white/15 bg-transparent text-foreground hover:bg-white/8",
         ghost: "text-muted-foreground hover:bg-white/8 hover:text-foreground",

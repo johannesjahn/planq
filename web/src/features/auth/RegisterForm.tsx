@@ -58,7 +58,9 @@ export function RegisterForm() {
     <div className="mt-7">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         <h2 className="text-[22px] font-semibold tracking-tight">Create your account</h2>
-        <p className="mt-1.5 text-[13px] text-muted-foreground">Takes about fifteen seconds. No email required.</p>
+        <p className="mt-1.5 text-[13px] text-muted-foreground">
+          Set up your clinician account. No email address required.
+        </p>
       </motion.div>
 
       <div className="mt-6">
@@ -82,9 +84,11 @@ export function RegisterForm() {
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="ada_lovelace" autoComplete="username" autoFocus {...field} />
+                    <Input placeholder="j_okafor" autoComplete="username" autoFocus {...field} />
                   </FormControl>
-                  <FormDescription>3–32 characters. Letters, numbers and underscores.</FormDescription>
+                  <FormDescription>
+                    3–32 characters. Letters, numbers and underscores — your team will see this on the rota.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

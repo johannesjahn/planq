@@ -2,6 +2,8 @@
 
 The browser client for the planq API: a React + TanStack Router SPA built with Vite, styled with Tailwind CSS v4 and shadcn/ui components in a dark glassmorphic theme.
 
+planq is positioned as shift planning for hospitals, clinics and care teams, so the copy addresses clinicians and rota administrators rather than developers. **Only registration, sign-in and the account view exist today** — the dashboard says so plainly instead of showing a placeholder rota that nobody should act on. Keep it that way: don't dress up unbuilt scheduling features as working ones.
+
 It is a **separate package** from the API at the repository root — its own `package.json`, lockfile, tsconfig, ESLint and Prettier config. Run every command below from `web/`.
 
 ## Setup
@@ -57,6 +59,7 @@ cd web && bun run api:types
 
 ## Notes on the design
 
+- **Clinical palette.** Three raw tokens in `src/index.css` — `--azure` (primary), `--teal` (accent) and `--mint` — drive the aurora, the buttons and the avatar. Nothing else trends warm, which is what keeps amber and red meaningful when they appear.
 - **Dark only, on purpose.** Frosted surfaces need a saturated backdrop to read as glass; there is no light theme rather than a bad one.
 - **Motion is opt-out.** Everything decorative sits behind `prefers-reduced-motion`, and the cursor-tracking highlight is skipped entirely for reduced-motion and touch input.
 - Sessions live in `localStorage` under `planq.session`. The stored user seeds the first paint; `/users/me` re-validates the token in the background and a 401 from anywhere clears the session.

@@ -1,6 +1,6 @@
 import { Outlet } from "@tanstack/react-router"
 import { motion } from "motion/react"
-import { KeyRoundIcon, ShieldCheckIcon, ZapIcon } from "lucide-react"
+import { CalendarClockIcon, ShieldCheckIcon, StethoscopeIcon } from "lucide-react"
 import { ApiStatusPill } from "@/components/ApiStatusPill"
 import { BrandMark, BrandWordmark } from "@/components/BrandMark"
 import { GlassPanel } from "@/components/GlassPanel"
@@ -9,18 +9,18 @@ import { AuthTabs } from "./AuthTabs"
 const highlights = [
   {
     icon: ShieldCheckIcon,
-    title: "Argon2id by default",
-    body: "Passwords are hashed with argon2id — never stored, never logged, never recoverable."
+    title: "Credentials never stored in the clear",
+    body: "Passwords are hashed with argon2id — never written down, never logged, never recoverable."
   },
   {
-    icon: KeyRoundIcon,
-    title: "Short-lived tokens",
-    body: "Sessions are signed JWTs that expire after two hours and re-validate on every load."
+    icon: CalendarClockIcon,
+    title: "Built for shared terminals",
+    body: "Sessions expire after two hours, so a ward workstation never stays open behind you."
   },
   {
-    icon: ZapIcon,
-    title: "Typed end to end",
-    body: "This client is generated from the API's own OpenAPI document, so the contract can't drift."
+    icon: StethoscopeIcon,
+    title: "One account per clinician",
+    body: "Every account is a single, uniquely identified person — the record the rota is built on."
   }
 ]
 
@@ -47,15 +47,17 @@ export function AuthLayout() {
             <BrandWordmark className="text-xl" />
           </div>
 
-          <h1 className="max-w-xl text-balance text-5xl leading-[1.05] font-semibold tracking-tight xl:text-6xl">
-            Plan quietly.
+          {/* Sized so each sentence holds one line at the narrowest lg breakpoint —
+              a three-line ragged headline undercuts the calm the copy is going for. */}
+          <h1 className="max-w-2xl text-balance text-[2.4rem] leading-[1.08] font-semibold tracking-tight xl:text-[3.1rem]">
+            Every shift covered.
             <br />
-            <span className="text-gradient">Ship loudly.</span>
+            <span className="text-gradient">Every clinician rested.</span>
           </h1>
 
           <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-            A deliberately small workspace for the work that actually matters. Create an account and pick up exactly
-            where you left off.
+            Shift planning for hospitals, clinics and care teams. Build the rota once, and let every clinician see
+            exactly where and when they are needed.
           </p>
 
           <ul className="mt-10 max-w-md space-y-3.5">
@@ -99,7 +101,7 @@ export function AuthLayout() {
           </GlassPanel>
 
           <p className="mt-6 px-1 text-center text-xs leading-relaxed text-muted-foreground/70">
-            By continuing you agree to keep your credentials to yourself.
+            Signing in on a shared ward terminal? Remember to sign out when you step away.
           </p>
         </motion.div>
       </div>

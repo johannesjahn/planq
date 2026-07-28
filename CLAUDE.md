@@ -56,6 +56,8 @@ A **separate package**, not a workspace member: its own `package.json`, `bun.loc
 
 Stack: Vite 8 + React 19, TanStack Router (code-based routes) + TanStack Query, Tailwind CSS v4 (`@tailwindcss/vite`, no `tailwind.config.js`), shadcn/ui primitives, react-hook-form + Zod, `motion` (Framer Motion v12) for animation, `openapi-fetch` + `openapi-typescript` for the API client.
 
+**Product framing**: planq is pitched as shift planning for hospitals, clinics and care teams, so UI copy addresses clinicians and rota administrators, not developers. Only auth + the account view are actually built — the dashboard's "Your next shifts" panel is an explicit empty state saying scheduling is still in development. Don't replace it with mock shifts, and don't write copy that implies unbuilt scheduling features work. Security claims in the marketing column must stay factually true of the code (argon2id hashing, two-hour session expiry) — no invented compliance certifications.
+
 ```bash
 cd web
 bun run dev        # :5173, proxies /api/* -> http://localhost:3000
@@ -76,7 +78,7 @@ bun run api:types  # api.json -> src/lib/api.gen.ts
 - `src/components/ui/` — shadcn/ui primitives (`components.json` present, so `bunx shadcn@latest add …` works).
 - `src/components/` — app-specific: `AuroraBackground`, `GlassPanel` (cursor-tracking highlight), `BrandMark`, `PasswordInput`, `FormAlert`, `SubmitButton`, `CopyButton`, `ApiStatusPill`, `NotFoundPage`.
 - `src/router.tsx` — route tree. `/login` and `/register` sit under a pathless `_auth` layout route so the card and the sliding tab pill stay mounted between them; `/` is guarded and `_auth` redirects away when already signed in.
-- `src/index.css` — design tokens (shadcn variable names, dark-only), the `glass` / `glass-subtle` `@utility` recipes, keyframes, and the `prefers-reduced-motion` blanket override.
+- `src/index.css` — design tokens (shadcn variable names, dark-only), the `glass` / `glass-subtle` `@utility` recipes, keyframes, and the `prefers-reduced-motion` blanket override. The palette is clinical by intent: three raw tokens `--azure` (primary), `--teal` (accent) and `--mint` feed the aurora, buttons and avatar; nothing else on screen is warm, so amber/red stay meaningful.
 
 ### Gotchas hit while building the frontend
 

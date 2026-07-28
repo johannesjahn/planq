@@ -13,12 +13,12 @@ export function NotFoundPage() {
       >
         <GlassPanel className="max-w-md p-8 text-center">
           <p className="font-mono text-5xl font-semibold text-gradient">404</p>
-          <h1 className="mt-4 text-xl font-semibold tracking-tight">Nothing planned here</h1>
+          <h1 className="mt-4 text-xl font-semibold tracking-tight">Nothing scheduled here</h1>
           <p className="mt-2 text-[13px] text-muted-foreground">
             That page doesn’t exist — or it moved somewhere else.
           </p>
           <Button asChild variant="glass" className="mt-6">
-            <Link to="/">Back to your account</Link>
+            <Link to="/">Back to your shifts</Link>
           </Button>
         </GlassPanel>
       </motion.div>
