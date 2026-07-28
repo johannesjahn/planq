@@ -44,6 +44,7 @@ type ApiErrorBody =
   | components["schemas"]["InvalidCredentials"]
   | components["schemas"]["Unauthorized"]
   | components["schemas"]["TooManyRequests"]
+  | components["schemas"]["PayloadTooLarge"]
   | components["schemas"]["HttpApiDecodeError"]
 
 export class ApiError extends Error {
@@ -96,6 +97,10 @@ function messageFor(body: unknown, status: number): string {
       return "Your session has expired. Please sign in again."
     case "TooManyRequests":
       return `Too many attempts. For account safety this device is paused — try again in ${formatWait(body.retryAfterSeconds)}.`
+    case "PayloadTooLarge":
+      // Unreachable from the app's own forms — the fields are far shorter than
+      // the limit — so this is only worth wording for a client that isn't ours.
+      return "That request was too large to process."
     case "HttpApiDecodeError":
       // The backend validates the same rules the form does, so this only shows up
       // when the two drift apart — surface the server's own wording in that case.

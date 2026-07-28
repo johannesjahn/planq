@@ -88,6 +88,16 @@
               }
             }
           },
+          "413": {
+            "description": "PayloadTooLarge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayloadTooLarge"
+                }
+              }
+            }
+          },
           "429": {
             "description": "TooManyRequests",
             "content": {
@@ -146,6 +156,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/InvalidCredentials"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PayloadTooLarge",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayloadTooLarge"
                 }
               }
             }
@@ -399,6 +419,25 @@
             "type": "string",
             "enum": [
               "UsernameAlreadyInUse"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PayloadTooLarge": {
+        "type": "object",
+        "required": [
+          "maxBytes",
+          "_tag"
+        ],
+        "properties": {
+          "maxBytes": {
+            "type": "number"
+          },
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "PayloadTooLarge"
             ]
           }
         },
