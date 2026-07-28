@@ -48,6 +48,20 @@ jobs:
           bun run openapi:generate
           git diff --exit-code web/api.json
 
+      # `drizzle/` is generated from src/db/schema.ts and committed, and it is what
+      # the server actually runs at startup. A schema change that forgets
+      # `bun run db:generate` would leave the two describing different tables, so
+      # regenerate and fail if that produces anything (a new migration file, or a
+      # rewritten snapshot).
+      - name: Check drizzle migrations are up to date
+        run: |
+          bun run db:generate
+          if [ -n "$(git status --porcelain drizzle)" ]; then
+            echo "src/db/schema.ts and drizzle/ are out of sync — run 'bun run db:generate' and commit the result."
+            git status --porcelain drizzle
+            exit 1
+          fi
+
   web:
     runs-on: ubuntu-latest
     defaults:

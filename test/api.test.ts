@@ -144,3 +144,34 @@ describe("GET /users/me", () => {
     expect(response.status).toBe(401)
   })
 })
+
+// The invariant these guard used to live in a COLLATE NOCASE hand-edit in the
+// migration file, which drizzle-kit dropped whenever it regenerated the table.
+// It is now the `users.username_lower` column and its UNIQUE index.
+describe("case-insensitive usernames", () => {
+  test("registration preserves the casing that was typed", async () => {
+    const response = await registerUser("NurseAmy", "supersecret")
+    expect(response.status).toBe(201)
+    const body = (await response.json()) as AuthResponseBody
+    expect(body.user.username).toBe("NurseAmy")
+  })
+
+  test("a lowercase variant of a mixed-case username is a duplicate", async () => {
+    const response = await registerUser("nurseamy", "supersecret")
+    expect(response.status).toBe(409)
+  })
+
+  test("logging in with different casing returns the stored casing", async () => {
+    const response = await request("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "NURSEAMY", password: "supersecret" })
+    })
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as AuthResponseBody
+    expect(body.user.username).toBe("NurseAmy")
+
+    const me = await request("/users/me", { headers: { Authorization: `Bearer ${body.token}` } })
+    expect(((await me.json()) as UserBody).username).toBe("NurseAmy")
+  })
+})

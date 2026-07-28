@@ -20,6 +20,17 @@ const Username = Schema.String.pipe(
   Schema.annotations({ description: "Unique username" })
 )
 
+/**
+ * The canonical form of a username, used for every lookup and for the
+ * `users.username_lower` UNIQUE index. Usernames are case-insensitive, so
+ * "JohnDoe" and "johndoe" must never become two accounts. `username` itself
+ * keeps whatever casing was typed at registration and is only ever displayed.
+ *
+ * `toLowerCase()` is safe to pair with SQLite's ASCII-only `lower()` here
+ * because `Username` restricts the character set to `[a-zA-Z0-9_]`.
+ */
+export const normalizeUsername = (username: string) => username.trim().toLowerCase()
+
 const Password = Schema.String.pipe(
   Schema.minLength(8, { message: () => "must be at least 8 characters" }),
   Schema.maxLength(128),
