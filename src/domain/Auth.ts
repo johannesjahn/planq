@@ -1,4 +1,4 @@
-import { Config, Context, Effect, Layer, Redacted, Schema } from "effect"
+import { Config, ConfigError, Context, Effect, Either, Layer, Redacted, Schema } from "effect"
 import * as jose from "jose"
 import { UserId } from "./User.ts"
 
@@ -11,13 +11,81 @@ export class CurrentUser extends Context.Tag("CurrentUser")<CurrentUser, Session
 
 export class JwtConfig extends Context.Tag("JwtConfig")<JwtConfig, { readonly secret: Uint8Array }>() {}
 
+// RFC 8725 §3.5: an HMAC key should be at least as long as the hash output,
+// which is 256 bits / 32 bytes for HS256.
+export const JWT_SECRET_MIN_LENGTH = 32
+
+// A 32-character string built from one or two repeated characters is long but
+// not secret. This is a floor, not an entropy estimate: a random base64 secret
+// of the minimum length carries ~25 distinct characters, and even hex carries
+// ~14, so nothing generated the documented way comes close to tripping it.
+const JWT_SECRET_MIN_DISTINCT_CHARS = 8
+
+// Values that are published somewhere — this repo's own .env.example and
+// READMEs — or that people reach for when a field says "put a secret here".
+// Compared case-insensitively against the trimmed secret.
+const publiclyKnownSecrets = new Set([
+  "change-me-to-a-long-random-string",
+  "change-me",
+  "changeme",
+  "change_me",
+  "dev-secret",
+  "development",
+  "password",
+  "secret",
+  "supersecret",
+  "your-jwt-secret",
+  "your-secret-here",
+  "jwt-secret",
+  "jwtsecret"
+])
+
+/**
+ * Returns a human-readable reason `secret` is unfit to sign tokens with, or
+ * `undefined` if it is acceptable.
+ *
+ * HS256's security is bounded entirely by this string's entropy: an attacker
+ * holding one captured token has the header, payload and signature, and can
+ * brute-force candidate keys offline with no further contact with the server.
+ * Recovering it means forging a token for any user, so a weak value has to be
+ * rejected at startup rather than quietly accepted.
+ *
+ * The messages never echo the value, since they surface in startup logs.
+ */
+export const validateJwtSecret = (secret: string): string | undefined => {
+  const generateHint = "generate one with `openssl rand -base64 32`"
+  if (publiclyKnownSecrets.has(secret.trim().toLowerCase())) {
+    return `JWT_SECRET is set to a publicly known placeholder — ${generateHint}`
+  }
+  if (secret.length < JWT_SECRET_MIN_LENGTH) {
+    return `JWT_SECRET must be at least ${JWT_SECRET_MIN_LENGTH} characters (got ${secret.length}) — ${generateHint}`
+  }
+  if (new Set(secret).size < JWT_SECRET_MIN_DISTINCT_CHARS) {
+    return `JWT_SECRET is long but repetitive (fewer than ${JWT_SECRET_MIN_DISTINCT_CHARS} distinct characters) — ${generateHint}`
+  }
+  return undefined
+}
+
+// Long, non-placeholder and never reachable outside `bun test`, so it satisfies
+// the same validation every other environment goes through — which is the point
+// of running the check on this branch too: the layer under test is the real one.
+const testOnlySecret = "test-only-jwt-secret-never-used-outside-bun-test"
+
 // A missing JWT_SECRET must fail startup, not silently fall back to a
 // well-known value that would let anyone forge tokens. The one exception is
 // `bun test` (NODE_ENV=test is set automatically), which has no .env file.
-const jwtSecretConfig =
+// A weak secret fails startup the same way a missing one does — the whole
+// value of failing fast is lost if the check only covers absence.
+const jwtSecretConfig = (
   process.env.NODE_ENV === "test"
-    ? Config.redacted("JWT_SECRET").pipe(Config.withDefault(Redacted.make("test-only-jwt-secret")))
+    ? Config.redacted("JWT_SECRET").pipe(Config.withDefault(Redacted.make(testOnlySecret)))
     : Config.redacted("JWT_SECRET")
+).pipe(
+  Config.mapOrFail((secret) => {
+    const problem = validateJwtSecret(Redacted.value(secret))
+    return problem === undefined ? Either.right(secret) : Either.left(ConfigError.InvalidData(["JWT_SECRET"], problem))
+  })
+)
 
 export const JwtConfigLive = Layer.effect(
   JwtConfig,

@@ -11,9 +11,12 @@ The product it backs is shift planning for hospitals, clinics and care teams. Re
 ```bash
 bun install
 cp .env.example .env
+echo "JWT_SECRET=$(openssl rand -base64 32)" >> .env
 ```
 
-`JWT_SECRET` must be set to a real secret outside of tests — the server refuses to start without it (no insecure default).
+`JWT_SECRET` signs every session token, and HS256 gives you exactly as much security as that string has entropy — anyone who captures one token can brute-force a weak key offline and then forge a token for any user. It ships blank in `.env.example` and there is no default outside tests, so the server refuses to start until you set it. It also refuses to start on a secret that is shorter than 32 characters (RFC 8725's floor for HS256), matches a known placeholder, or is built from a handful of repeated characters.
+
+The same applies to a container deployment: `docker-compose.yml` reads `env_file: .env`, so a `.env` copied from the example without that line fails at boot with `Invalid data at JWT_SECRET` rather than coming up on a published key.
 
 ## Run
 

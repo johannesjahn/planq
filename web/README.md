@@ -24,8 +24,10 @@ bun run preview   # serve the production build
 `bun run dev` proxies `/api/*` to `http://localhost:3000` (override with `VITE_PROXY_TARGET`), so start the API first:
 
 ```bash
-cd .. && JWT_SECRET=dev-secret bun run dev
+cd .. && bun run dev
 ```
+
+That needs a `JWT_SECRET` of at least 32 characters in the root `.env` (Bun autoloads it) or the API will not start — see the root [`README.md`](../README.md#setup). Put it in the file rather than generating one per launch, or every restart invalidates the token you are signed in with.
 
 For a build that talks to an API on a different origin, set `VITE_API_BASE_URL` (e.g. `https://api.example.com`) and add that origin's frontend to the API's `CORS_ORIGINS`. `VITE_API_BASE_URL` also has to be set at build time for the Content-Security-Policy below to allow the requests.
 
