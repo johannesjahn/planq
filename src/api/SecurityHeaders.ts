@@ -1,5 +1,5 @@
-import { HttpApiBuilder, HttpApp, HttpServerRequest, HttpServerResponse } from "@effect/platform"
-import { Config, Effect } from "effect"
+import { HttpApiBuilder, HttpApp, HttpServerResponse } from "@effect/platform"
+import { Effect } from "effect"
 
 /**
  * Security response headers, applied to every response the API produces.
@@ -10,8 +10,6 @@ import { Config, Effect } from "effect"
  * which no `httpOnly` flag can protect, so the headers below are the substitute
  * defence. Each one closes a specific hole:
  *
- *  - `Strict-Transport-Security` — stops a first-visit or post-expiry request
- *    being downgraded to plain HTTP with the bearer token on it.
  *  - `X-Content-Type-Options: nosniff` — stops a JSON error body being sniffed
  *    into something the browser will execute.
  *  - `X-Frame-Options` / CSP `frame-ancestors` — no origin can frame us, so
@@ -20,26 +18,17 @@ import { Config, Effect } from "effect"
  *  - `Referrer-Policy: no-referrer` — a URL of ours never reaches a third party
  *    through a `Referer` header.
  *  - `Content-Security-Policy` — see the two policies below.
+ *
+ * **`Strict-Transport-Security` is deliberately not here.** It is a property of
+ * the origin, not of this app, and this app is the wrong place to decide it
+ * from. Behind a TLS-terminating proxy the connection we see is plain HTTP, so
+ * the only evidence of the browser's scheme is `X-Forwarded-Proto` — a header we
+ * would have to be told to trust, and getting that wrong means either never
+ * sending the header or pinning clients to a scheme the origin cannot serve for
+ * the length of the `max-age`, which cannot be withdrawn early. The TLS
+ * terminator knows the answer without being told. Set it there; `README.md`
+ * says so, and repeats the header set to hide or drop if it sets these too.
  */
-
-/** One year, the shortest max-age the HSTS preload list will accept. */
-const DEFAULT_HSTS_MAX_AGE_SECONDS = 31_536_000
-
-/**
- * `Strict-Transport-Security`'s `max-age`, in seconds. `0` drops the header
- * entirely, for the rare deployment that has to keep serving plain HTTP —
- * a max-age already sent cannot be taken back before it expires.
- */
-export const hstsMaxAgeSeconds: Config.Config<number> = Config.integer("HSTS_MAX_AGE_SECONDS").pipe(
-  Config.withDefault(DEFAULT_HSTS_MAX_AGE_SECONDS)
-)
-
-/**
- * Whether `X-Forwarded-Proto` may be believed. Same header-forgery reasoning as
- * `TRUST_PROXY` in `RateLimitMiddleware.ts`, and deliberately the same flag: a
- * client that can forge the scheme can talk the server out of sending HSTS.
- */
-const trustProxy: Config.Config<boolean> = Config.boolean("TRUST_PROXY").pipe(Config.withDefault(false))
 
 /**
  * The policy for a JSON response. `default-src 'none'` is the whole of it —
@@ -77,49 +66,12 @@ const DOCUMENT_CSP = [
 const isHtml = (response: HttpServerResponse.HttpServerResponse): boolean =>
   response.headers["content-type"]?.trimStart().toLowerCase().startsWith("text/html") === true
 
-/**
- * Whether the browser reached us over TLS. Behind a terminating proxy the
- * connection we see is plain HTTP, so the only evidence is `X-Forwarded-Proto`
- * — and that is only evidence when something in front of us overwrites it.
- * Everything else is treated as plain HTTP, which is the direction that fails
- * safe: a missed HSTS header is recoverable, a wrongly-sent one is not.
- */
-const isHttps = (request: HttpServerRequest.HttpServerRequest, trustProxy: boolean): boolean => {
-  if (trustProxy) {
-    const forwarded = request.headers["x-forwarded-proto"]?.split(",")[0]?.trim().toLowerCase()
-    if (forwarded !== undefined && forwarded.length > 0) return forwarded === "https"
-  }
-  // `originalUrl` is the absolute request URL on the Bun and web platforms. A
-  // platform that reports a bare path simply never matches, i.e. no HSTS.
-  return request.originalUrl.toLowerCase().startsWith("https:")
-}
-
-export interface SecurityHeadersOptions {
-  readonly hstsMaxAgeSeconds: number
-  readonly trustProxy: boolean
-}
-
-const headersFor = (
-  request: HttpServerRequest.HttpServerRequest,
-  response: HttpServerResponse.HttpServerResponse,
-  options: SecurityHeadersOptions
-): Record<string, string> => {
-  const headers: Record<string, string> = {
-    "content-security-policy": isHtml(response) ? DOCUMENT_CSP : JSON_CSP,
-    "x-content-type-options": "nosniff",
-    "x-frame-options": "DENY",
-    "referrer-policy": "no-referrer"
-  }
-
-  // Sent only over TLS: a browser ignores HSTS on a plain-HTTP response anyway,
-  // and not sending it keeps a local HTTP setup from being pinned to a scheme
-  // it cannot serve.
-  if (options.hstsMaxAgeSeconds > 0 && isHttps(request, options.trustProxy)) {
-    headers["strict-transport-security"] = `max-age=${options.hstsMaxAgeSeconds}; includeSubDomains`
-  }
-
-  return headers
-}
+const headersFor = (response: HttpServerResponse.HttpServerResponse): Record<string, string> => ({
+  "content-security-policy": isHtml(response) ? DOCUMENT_CSP : JSON_CSP,
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+  "referrer-policy": "no-referrer"
+})
 
 /**
  * Wrapping `app` and mapping its success channel is not enough: a router 404 and
@@ -129,13 +81,9 @@ const headersFor = (
  * `toHandled` applies to the error path as well — the same mechanism
  * `RateLimiter` uses to get `Retry-After` onto its 429.
  */
-export const securityHeaders =
-  (options: SecurityHeadersOptions): HttpApiBuilder.MiddlewareFn<never> =>
-  (app) =>
-    HttpApp.appendPreResponseHandler((request, response) =>
-      Effect.succeed(HttpServerResponse.setHeaders(response, headersFor(request, response, options)))
-    ).pipe(Effect.zipRight(app))
+export const securityHeaders: HttpApiBuilder.MiddlewareFn<never> = (app) =>
+  HttpApp.appendPreResponseHandler((_request, response) =>
+    Effect.succeed(HttpServerResponse.setHeaders(response, headersFor(response)))
+  ).pipe(Effect.zipRight(app))
 
-export const SecurityHeadersLive = HttpApiBuilder.middleware(
-  Effect.map(Effect.all({ hstsMaxAgeSeconds, trustProxy }), securityHeaders)
-)
+export const SecurityHeadersLive = HttpApiBuilder.middleware(securityHeaders)
