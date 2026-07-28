@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 import { HttpApiBuilder } from "@effect/platform"
 import { BunHttpServer } from "@effect/platform-bun"
-import { Layer } from "effect"
+import { ConfigProvider, Layer } from "effect"
 import { ApiLive } from "../src/api/ApiLive.ts"
 import { DatabaseLive } from "../src/db/Database.ts"
 
@@ -9,7 +9,19 @@ import { DatabaseLive } from "../src/db/Database.ts"
 // requests for the lifetime of this file (see HttpApiBuilder.toWebHandler).
 process.env["DB_FILENAME"] = ":memory:"
 
-const AppLive = Layer.merge(ApiLive.pipe(Layer.provide(DatabaseLive)), BunHttpServer.layerContext)
+// The auth endpoints are rate limited, and every request in this file comes
+// from the same (absent) client address, so the production defaults would
+// eventually reject them. Rate limiting itself is covered by
+// `test/auth-rate-limit.test.ts`; here it just needs to stay out of the way.
+const NoRateLimits = Layer.setConfigProvider(
+  ConfigProvider.fromMap(new Map([["RATE_LIMIT_ENABLED", "false"]])).pipe(
+    ConfigProvider.orElse(() => ConfigProvider.fromEnv())
+  )
+)
+
+const AppLive = Layer.merge(ApiLive.pipe(Layer.provide(DatabaseLive)), BunHttpServer.layerContext).pipe(
+  Layer.provide(NoRateLimits)
+)
 
 const { handler, dispose } = HttpApiBuilder.toWebHandler(AppLive)
 

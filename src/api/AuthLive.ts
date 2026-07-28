@@ -6,6 +6,7 @@ import { UsernameAlreadyInUse, InvalidCredentials, AuthResponse, User, UserId } 
 import { Db } from "../db/Database.ts"
 import { users } from "../db/schema.ts"
 import { Api } from "./Api.ts"
+import { RateLimiter } from "./RateLimiter.ts"
 
 // SQLite reports a duplicate-key insert by throwing synchronously; bun:sqlite
 // attaches the underlying sqlite3 error code as `.code`. Effect.try wraps
@@ -53,6 +54,12 @@ export const AuthLive = HttpApiBuilder.group(Api, "auth", (handlers) =>
     .handle("login", ({ payload }) =>
       Effect.gen(function* () {
         const db = yield* Db
+        const rateLimiter = yield* RateLimiter
+
+        // Checked before the lookup so a locked-out account costs neither a
+        // query nor an argon2id verification. Failures are recorded for unknown
+        // usernames too, so a 429 never reveals whether an account exists.
+        yield* rateLimiter.checkUsername(payload.username)
 
         const row = yield* Effect.try(() =>
           db.select().from(users).where(eq(users.username, payload.username)).get()
@@ -62,9 +69,11 @@ export const AuthLive = HttpApiBuilder.group(Api, "auth", (handlers) =>
         // miss, so response time doesn't reveal whether the username exists.
         const valid = yield* verifyPasswordConstantTime(payload.password, row?.passwordHash)
         if (!row || !valid) {
+          yield* rateLimiter.recordLoginFailure(payload.username)
           return yield* Effect.fail(new InvalidCredentials())
         }
 
+        yield* rateLimiter.recordLoginSuccess(payload.username)
         const token = yield* signToken({ id: row.id, username: row.username })
         return new AuthResponse({
           token,
