@@ -27,7 +27,19 @@ bun run preview   # serve the production build
 cd .. && JWT_SECRET=dev-secret bun run dev
 ```
 
-For a build that talks to an API on a different origin, set `VITE_API_BASE_URL` (e.g. `https://api.example.com`) and add that origin's frontend to the API's `CORS_ORIGINS`.
+For a build that talks to an API on a different origin, set `VITE_API_BASE_URL` (e.g. `https://api.example.com`) and add that origin's frontend to the API's `CORS_ORIGINS`. `VITE_API_BASE_URL` also has to be set at build time for the Content-Security-Policy below to allow the requests.
+
+## Security headers
+
+The session token lives in `localStorage`, so no `httpOnly` flag is protecting it: any script that runs on the page can read it, and a stolen token is good for two hours with nothing able to revoke it. The Content-Security-Policy is the substitute defence, and it blocks both halves of that attack — `script-src 'self'` stops an injected script running, `connect-src` stops it shipping the token to an attacker's origin.
+
+`security-headers.ts` is the single definition, used three ways:
+
+- `bun run dev` and `bun run preview` send the headers directly (`server.headers` / `preview.headers` in `vite.config.ts`), so a policy that breaks the app breaks it here rather than in production. Development gets two extra allowances that the build does not need: inline scripts (Vite's React Refresh preamble) and `ws:` (HMR).
+- `vite build` inlines the policy into `dist/index.html` as a `<meta http-equiv="Content-Security-Policy">`, so a static host that sets no headers still enforces the script and connect restrictions.
+- **In production, set the full set as response headers** on whatever serves `dist/` — nginx, Caddy, Netlify, CloudFront. `X-Frame-Options` and CSP's `frame-ancestors` cannot be expressed in a `<meta>` tag, so clickjacking protection needs a real header. `Strict-Transport-Security` belongs there too, alongside TLS termination.
+
+`style-src` has to keep `'unsafe-inline'`: React `style` props and `motion`'s animations both write inline `style` attributes.
 
 ## The API contract
 
@@ -56,6 +68,7 @@ cd web && bun run api:types
 - `src/components` — app-specific presentation: the aurora backdrop, the frosted panel with its cursor-tracking highlight, the brand mark
 - `src/router.tsx` — the TanStack Router route tree, including the guards that bounce signed-out visitors to `/login` and signed-in ones away from it
 - `src/index.css` — design tokens, the `glass` / `glass-subtle` utilities, and the keyframes
+- `security-headers.ts` — the CSP and the rest of the security response headers, shared by the dev server, `vite preview` and the `<meta>` tag inlined into the build
 
 ## Notes on the design
 
