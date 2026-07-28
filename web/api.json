@@ -15,23 +15,11 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Success",
+            "description": "HealthStatus",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "status"
-                  ],
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "ok"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false
+                  "$ref": "#/components/schemas/HealthStatus"
                 }
               }
             }
@@ -42,6 +30,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HttpApiDecodeError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "operationId": "health.ready",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "HealthStatus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request did not match the expected schema",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpApiDecodeError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ServiceUnavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceUnavailable"
                 }
               }
             }
@@ -242,6 +272,21 @@
   },
   "components": {
     "schemas": {
+      "HealthStatus": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "HttpApiDecodeError": {
         "type": "object",
         "required": [
@@ -335,6 +380,25 @@
             "description": "an object to be decoded into a globally shared symbol"
           }
         ]
+      },
+      "ServiceUnavailable": {
+        "type": "object",
+        "required": [
+          "check",
+          "_tag"
+        ],
+        "properties": {
+          "check": {
+            "type": "string"
+          },
+          "_tag": {
+            "type": "string",
+            "enum": [
+              "ServiceUnavailable"
+            ]
+          }
+        },
+        "additionalProperties": false
       },
       "RegisterPayload": {
         "type": "object",
