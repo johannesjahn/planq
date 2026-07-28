@@ -1,10 +1,34 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "description": "Two Bun packages live here — the root API and the separate (non-workspace) web/ frontend — so most groups deliberately match on package name rather than on a manager or a directory, and pick up both packages at once when they share a dependency.",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "lockFileMaintenance": {
     "enabled": true
   },
+  "minimumReleaseAge": "3 days",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track the pinned bun-version in the CI workflows as the oven/bun Docker image, so it groups with the Dockerfile base image below",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+: \"(?<currentValue>[^\"]+)\""
+      ],
+      "versioningTemplate": "docker"
+    }
+  ],
   "packageRules": [
+    {
+      "description": "The Dockerfile base image and the CI workflow's bun-version are the same runtime and must never drift apart — one PR bumps both",
+      "groupName": "bun runtime",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["oven/bun"]
+    },
+    {
+      "description": "Pinned-to-SHA workflow actions; harmless to review in one PR",
+      "groupName": "github actions",
+      "matchManagers": ["github-actions"]
+    },
     {
       "description": "Effect and its platform packages release together and their types are tightly coupled",
       "groupName": "effect",
@@ -41,6 +65,16 @@
       "matchPackageNames": ["@radix-ui/**"]
     },
     {
+      "description": "cn() in src/lib/utils.ts is built out of these three, and the shadcn/ui primitives are generated against them together",
+      "groupName": "shadcn utilities",
+      "matchPackageNames": ["class-variance-authority", "clsx", "tailwind-merge"]
+    },
+    {
+      "description": "The login/register forms wire react-hook-form to the Zod schemas through @hookform/resolvers, which peer-depends on both",
+      "groupName": "forms",
+      "matchPackageNames": ["react-hook-form", "@hookform/resolvers", "zod"]
+    },
+    {
       "description": "openapi-typescript generates src/lib/api.gen.ts and openapi-fetch consumes it — bumping one without the other can break the generated client",
       "groupName": "openapi codegen",
       "matchPackageNames": ["openapi-typescript", "openapi-fetch"]
@@ -59,10 +93,20 @@
       ]
     },
     {
+      "description": "Both packages typecheck against the same compiler; splitting the bump leaves one of them lint- or build-broken",
+      "groupName": "typescript",
+      "matchPackageNames": ["typescript"]
+    },
+    {
       "description": "TypeScript is held on 5.x deliberately: typescript-eslint hard-errors on TS 7 (see CLAUDE.md). Re-enable once typescript-eslint supports it.",
       "matchPackageNames": ["typescript"],
       "matchUpdateTypes": ["major"],
       "enabled": false
+    },
+    {
+      "description": "Ambient type packages for the two runtimes, no runtime impact",
+      "groupName": "runtime types",
+      "matchPackageNames": ["@types/bun", "@types/node"]
     }
   ]
 }
