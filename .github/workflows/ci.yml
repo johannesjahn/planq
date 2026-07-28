@@ -5,6 +5,21 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege by default: both jobs only read the checked-out code. CI runs
+# `bun install` and project tooling on pull_request events (including from
+# forks), so the token handed to that dependency tree must not be able to write.
+# Grant anything extra per-job, only where a step actually needs it.
+permissions:
+  contents: read
+
+env:
+  # Kept in step with the `oven/bun` base image in the Dockerfile so CI validates
+  # a commit on the same runtime production runs — Bun is the transpiler, the
+  # test runner, the SQLite driver and the password hasher here, not a peripheral
+  # tool. Renovate bumps this line and the Dockerfile together (see renovate.json).
+  # renovate: datasource=docker depName=oven/bun
+  BUN_VERSION: "1.3.14"
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -13,7 +28,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
 
       - run: bun install --frozen-lockfile
 
@@ -43,7 +58,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: latest
+          bun-version: ${{ env.BUN_VERSION }}
 
       - run: bun install --frozen-lockfile
 
