@@ -126,6 +126,11 @@ export interface components {
             /** @enum {string} */
             _tag: "UsernameAlreadyInUse";
         };
+        PayloadTooLarge: {
+            maxBytes: number;
+            /** @enum {string} */
+            _tag: "PayloadTooLarge";
+        };
         TooManyRequests: {
             retryAfterSeconds: number;
             /** @enum {string} */
@@ -232,6 +237,15 @@ export interface operations {
                     "application/json": components["schemas"]["UsernameAlreadyInUse"];
                 };
             };
+            /** @description PayloadTooLarge */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayloadTooLarge"];
+                };
+            };
             /** @description TooManyRequests */
             429: {
                 headers: {
@@ -281,6 +295,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvalidCredentials"];
+                };
+            };
+            /** @description PayloadTooLarge */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayloadTooLarge"];
                 };
             };
             /** @description TooManyRequests */
