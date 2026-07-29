@@ -45,6 +45,7 @@ type ApiErrorBody =
   | components["schemas"]["Unauthorized"]
   | components["schemas"]["TooManyRequests"]
   | components["schemas"]["PayloadTooLarge"]
+  | components["schemas"]["ServiceUnavailable"]
   | components["schemas"]["HttpApiDecodeError"]
 
 export class ApiError extends Error {
@@ -66,6 +67,15 @@ export class ApiError extends Error {
   /** True when the API is throttling this client — retrying immediately will not help. */
   get isRateLimited() {
     return this.status === 429
+  }
+
+  /**
+   * True when the API is reachable but a dependency it needs is down — the
+   * readiness probe's 503. Distinct from a network failure: the server answered,
+   * it just can't serve real traffic.
+   */
+  get isUnavailable() {
+    return this.status === 503
   }
 }
 
@@ -97,6 +107,8 @@ function messageFor(body: unknown, status: number): string {
       return "Your session has expired. Please sign in again."
     case "TooManyRequests":
       return `Too many attempts. For account safety this device is paused — try again in ${formatWait(body.retryAfterSeconds)}.`
+    case "ServiceUnavailable":
+      return "The service is temporarily unavailable. Please try again in a few minutes."
     case "PayloadTooLarge":
       // Unreachable from the app's own forms — the fields are far shorter than
       // the limit — so this is only worth wording for a client that isn't ours.
@@ -135,5 +147,6 @@ export const api = {
   register: (payload: RegisterPayload) => request(() => client.POST("/auth/register", { body: payload })),
   login: (payload: LoginPayload) => request(() => client.POST("/auth/login", { body: payload })),
   me: () => request(() => client.GET("/users/me")),
-  health: () => request(() => client.GET("/health"))
+  health: () => request(() => client.GET("/health")),
+  ready: () => request(() => client.GET("/ready"))
 }

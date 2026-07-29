@@ -45,10 +45,24 @@ cd web && bun install && bun run dev   # http://localhost:5173, proxies /api to 
 
 ## Endpoints
 
-- `GET /health` — `{ status: "ok" }`
+- `GET /health` — liveness. `{ status: "ok" }`, touches nothing
+- `GET /ready` — readiness. `{ status: "ok" }`, or `503 { _tag: "ServiceUnavailable", check: "database" }` if SQLite can't be queried
 - `POST /auth/register` — `{ username, password }` -> `{ token, user }`
 - `POST /auth/login` — `{ username, password }` -> `{ token, user }`
 - `GET /users/me` — requires `Authorization: Bearer <token>` -> `user`
+
+### Which probe to point at what
+
+`/health` says the process is up. `/ready` says it can actually serve `/auth/*`
+and `/users/me`, because it runs a real query against the database — the volume
+being unmounted, remounted read-only, full, or owned by the wrong user all fail
+it, and all of them leave `/health` answering `200`.
+
+Point anything that **restarts** the container at `/health`: none of those
+failures are fixed by a restart, so a readiness-driven restart is just a crash
+loop. Point anything that **routes traffic or alerts** at `/ready`. The image's
+`HEALTHCHECK` uses `/ready`, because Docker's health status reports rather than
+restarts.
 
 ## Scripts
 

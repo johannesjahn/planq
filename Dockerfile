@@ -35,7 +35,20 @@ EXPOSE 3000
 # DB_FILENAME defaults to ./planq.sqlite (relative to WORKDIR); mount a volume
 # and point DB_FILENAME at a path inside it for data to survive container recreation.
 
+# Pointed at /ready, not /health. /health proves only that the listener is up,
+# which it can be while every request that touches SQLite returns 500 — an
+# unmounted or read-only /app/data volume, a corrupt database file, or a volume
+# whose ownership no longer lets the non-root `bun` user write (the chown above
+# applies to the image, not to a volume mounted over it later). /ready runs a
+# real query, so those all show as unhealthy.
+#
+# Docker's HEALTHCHECK reports status; it does not restart the container. That
+# is why readiness is the right target here: none of the failures above would be
+# fixed by a restart, and marking the container unhealthy is exactly what should
+# happen — orchestrators drain it and alerting fires. If you wire this image into
+# something that *does* restart on an unhealthy check, point that probe at
+# /health instead and check /ready separately.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD bun -e "process.exit((await fetch('http://localhost:' + (process.env.PORT ?? 3000) + '/health')).ok ? 0 : 1)"
+  CMD bun -e "process.exit((await fetch('http://localhost:' + (process.env.PORT ?? 3000) + '/ready')).ok ? 0 : 1)"
 
 CMD ["bun", "run", "src/Server.ts"]
