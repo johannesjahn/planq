@@ -4,7 +4,7 @@
 # "start": "bun run src/Server.ts" in package.json and noEmit in tsconfig.json),
 # so this only needs a deps stage and a release stage, no compile stage.
 
-FROM oven/bun:1.4.0 AS base
+FROM oven/bun:1.4.2 AS base
 WORKDIR /app
 
 FROM base AS deps
