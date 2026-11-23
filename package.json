@@ -3,9 +3,9 @@
   "module": "src/Server.ts",
   "dependencies": {
     "@effect/platform": "^0.97.0",
-    "@effect/platform-bun": "^0.91.0",
+    "@effect/platform-bun": "^4.0.0",
     "drizzle-orm": "^0.45.2",
-    "effect": "^3.22.0",
+    "effect": "^4.0.0",
     "jose": "^6.2.4"
   },
   "devDependencies": {
